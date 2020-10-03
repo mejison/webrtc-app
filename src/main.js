@@ -5,14 +5,16 @@ import "element-ui/lib/theme-chalk/index.css";
 import "@/mian.scss";
 
 import router from "@/router";
-import store from './store'
+import store from "./store";
+import VueCookies from "vue-cookies";
 
 Vue.use(ElementUI, { size: "small" });
+Vue.use(VueCookies);
 
 Vue.config.productionTip = false;
 
 new Vue({
   router,
   store,
-  render: (h) => h(App)
+  render: (h) => h(App),
 }).$mount("#app");
