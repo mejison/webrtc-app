@@ -2,7 +2,7 @@ import axios from "axios";
 import VueCookie from "vue-cookies";
 
 const instance = axios.create({
-  baseURL: "http://localhost:3000/api",
+  baseURL: "https://e544f311e43d.ngrok.io/api",
   timeout: 1000,
 });
 
@@ -51,7 +51,7 @@ const getIceCandidate = () => {
     {
       headers: {
         Authorization:
-          "Basic " + btoa("mejison:8de20626-ffea-11ea-900b-0242ac150002"),
+          "Basic " + btoa("digary:0bedd2ac-0518-11eb-b2f9-0242ac150002"),
       },
     }
   );

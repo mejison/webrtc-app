@@ -5,7 +5,7 @@
         <video muted autoplay ref="local-video"></video>
       </div>
       <div class="remote-video">
-        <video ref="remote-video" autoplay></video>
+        <video autoplay ref="remote-video"></video>
       </div>
     </div>
 
@@ -36,30 +36,32 @@ export default {
   },
 
   methods: {
-    onAddStream(event) {
-      console.log("onAddStream", event);
+    onTrack(event) {
       const remoteVideo = this.$refs["remote-video"];
-      remoteVideo.srcObject = event.stream;
-      this.remoteVideo = event.stream;
+      remoteVideo.srcObject = event.streams[0];
+      this.remoteVideo = event.streams[0];
     },
     onClickCall() {
       this.getAccessVideoAudio().then(() => {
         this.createPeerToPeerConnect().then(() => {
           setTimeout(() => {
-            this.peerConnect.addStream(this.localStream);
-          }, 1500);
-          this.peerConnect
-            .createOffer()
-            .then((offer) => {
-              return this.peerConnect.setLocalDescription(offer);
-            })
-            .then(() => {
-              api.createOffer({
-                caller: this.me.id,
-                user_id: this.current.id,
-                sdp: this.peerConnect.localDescription,
-              });
+            this.localStream.getTracks().forEach((track) => {
+              this.peerConnect.addTrack(track, this.localStream);
             });
+
+            this.peerConnect
+              .createOffer()
+              .then((offer) => {
+                return this.peerConnect.setLocalDescription(offer);
+              })
+              .then(() => {
+                api.createOffer({
+                  caller: this.me.id,
+                  user_id: this.current.id,
+                  sdp: this.peerConnect.localDescription,
+                });
+              });
+          }, 1500);
         });
       });
     },
@@ -91,12 +93,12 @@ export default {
         this.peerConnect = await new RTCPeerConnection({
           iceServers: [...iceServers],
         });
-        this.peerConnect.onicecandidate = this.onIceCandidate;
-        this.peerConnect.onaddtrack = this.onAddStream;
+
+        this.peerConnect.icecandidate = this.onIceCandidate;
+        this.peerConnect.ontrack = this.onTrack;
       });
     },
-    onIceCandidate(event) {
-      console.log(event);
+    onIceCandidate(peer, event) {
       if (event.candidate) {
         const candidate = event.candidate;
         api.sendIceCandidate({
@@ -107,7 +109,6 @@ export default {
     },
     addCandidate(candidate) {
       this.peerConnect.addIceCandidate(candidate);
-      console.log("addCandidate recived", candidate);
     },
     answer(answer) {
       this.peerConnect.setRemoteDescription(answer.sdp);
@@ -115,20 +116,22 @@ export default {
     incoming(offer) {
       this.getAccessVideoAudio().then(() => {
         this.createPeerToPeerConnect().then(() => {
-          setTimeout(() => {
-            this.peerConnect.addStream(this.localStream);
-          }, 1500);
           this.peerConnect.setRemoteDescription(offer.sdp);
-          this.peerConnect.createAnswer().then((answer) => {
-            api
-              .createAnswer({
-                user_id: offer.caller,
-                sdp: answer,
-              })
-              .then(() => {
-                this.peerConnect.setLocalDescription(answer);
-              });
-          });
+          setTimeout(() => {
+            this.localStream.getTracks().forEach((track) => {
+              this.peerConnect.addTrack(track, this.localStream);
+            });
+            this.peerConnect.createAnswer().then((answer) => {
+              api
+                .createAnswer({
+                  user_id: offer.caller,
+                  sdp: answer,
+                })
+                .then(() => {
+                  this.peerConnect.setLocalDescription(answer);
+                });
+            });
+          }, 1500);
         });
       });
     },
@@ -152,9 +155,12 @@ export default {
       width: 100%;
       min-height: 400px;
       background: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
       video {
-        height: 100%;
+        width: 100%;
       }
     }
 
